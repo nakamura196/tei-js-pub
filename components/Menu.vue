@@ -52,7 +52,7 @@ export default class Menu extends Vue {
     return items
   }
 
-  scroll(id) {
+  scroll(id: string) {
     const point: any = (document.querySelector(
       '#' + id
     ) as any).getBoundingClientRect()
