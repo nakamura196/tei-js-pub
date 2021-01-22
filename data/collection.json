@@ -1,0 +1,16 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://nakamura196.github.io/tei-js-pub/data/collection.json",
+  "label": "渋沢栄一伝記資料TEI共同研究",
+  "members": [
+    {
+      "@id": "https://nakamura196.github.io/tei-js-pub/data/DKB01_20210113.xml",
+      "label": "渋沢栄一伝記資料. 別巻第1 日記 (慶応4年-大正3年)",
+      "style": "https://nakamura196.github.io/tei-js-pub/data/shibusawa.json"
+    },
+    {
+      "@id": "https://nakamura196.github.io/tei-js-pub/data/DKB02_20210113.xml",
+      "label": "渋沢栄一伝記資料. 別巻第2 日記 (大正4年-昭和5年), 集会日時通知表"
+    }
+  ]
+}
