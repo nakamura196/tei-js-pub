@@ -22,14 +22,15 @@ const basePath = baseUrl + baseDir
 
 // meta
 const lang = 'ja'
-const siteName = '伝記資料TEI共同研究'
+const siteName = 'TEI Viewer'
 env.siteName = siteName
-const siteDesc = '伝記資料TEI共同研究'
-const siteKeywords = 'IIIF, TEI'
+const siteDesc = 'TEI Viewer'
+const siteKeywords = 'TEI'
 
 // images
 const iconImages = basePath + 'img/icons/'
 const ogpImages = basePath + 'img/ogp/' // cdnPath + 'img/ogp/'
+const assets = basePath + 'assets/css/'
 
 // pwa
 const shortName = 'shibusawa'
@@ -124,7 +125,7 @@ export default {
       },
       {
         rel: 'stylesheet',
-        href: '/assets/css/CETEIcean.css',
+        href: assets + 'CETEIcean.css',
       },
     ],
   },
