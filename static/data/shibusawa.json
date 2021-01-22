@@ -1,0 +1,20 @@
+{
+  "persName": {
+    "background-color": "#ffccbc"
+  },
+  "placeName": {
+    "background-color": "#c8e6c9"
+  },
+  "date": {
+    "background-color": "#bbdefb"
+  },
+  "time": {
+    "background-color": "#fff9c4"
+  },
+  "ab": {
+    "padding": "20px"
+  },
+  "div[type=\"archival-description\"]": {
+    "padding-top": "100px"
+  }
+}

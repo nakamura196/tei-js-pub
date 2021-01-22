@@ -127,6 +127,10 @@ export default {
         rel: 'stylesheet',
         href: assets + 'CETEIcean.css',
       },
+      {
+        rel: 'stylesheet',
+        href: assets + 'style.css',
+      },
     ],
   },
 

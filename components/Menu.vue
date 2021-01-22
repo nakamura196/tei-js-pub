@@ -18,13 +18,18 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'nuxt-property-decorator'
+import { Vue, Component } from 'nuxt-property-decorator'
 import VueScrollTo from 'vue-scrollto'
 
 @Component({})
 export default class Menu extends Vue {
-  @Prop({})
-  xml!: any
+  get xml(): any {
+    return this.$store.getters.getXml
+  }
+
+  set xml(value) {
+    this.$store.commit('setXml', value)
+  }
 
   get items() {
     const xml = this.xml

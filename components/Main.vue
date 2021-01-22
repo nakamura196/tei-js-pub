@@ -23,6 +23,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'nuxt-property-decorator'
+import axios from 'axios'
 import Main from '~/components/Main.vue'
 
 @Component({
@@ -35,29 +36,29 @@ export default class Main2 extends Vue {
   @Prop({})
   elements!: any
 
-  get styles(): any {
-    return {
-      teiHeader: 'display: none;',
-      div: 'padding : 20px;',
-      ab: 'padding : 20px;',
-      head: 'font-weight: bold; font-size: large; padding : 20px;',
-      'archival-description': 'padding-top: 100px',
-      persName: 'background-color: #ffccbc;',
-      placeName: 'background-color: #c8e6c9;',
-      time: 'background-color: #fff9c4;',
-    }
+  get style(): {} {
+    return this.$store.getters.getStyle
+  }
+
+  set style(value) {
+    this.$store.commit('setStyle', value)
   }
 
   getStyle(name: string, type: any = null) {
-    let result: string[] = []
-    const styles = this.styles
-    if (styles[name]) {
-      result = result.concat(styles[name])
+    const result: string[] = []
+
+    let key = name
+    if (type) {
+      key += `[type="${type}"]`
     }
-    if (styles[type]) {
-      result = result.concat(styles[type])
+    const style: any = this.style
+    if (style[key]) {
+      const obj = style[key]
+      for (const key2 in obj) {
+        result.push(`${key2}: ${obj[key2]}`)
+      }
     }
-    return result.join(' ')
+    return result.join('; ')
   }
 }
 </script>

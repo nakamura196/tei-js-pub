@@ -7,7 +7,7 @@
         :temporary="true"
         :width="(256 * 3) / 2"
       >
-        <Menu v-if="xml" :xml="xml"></Menu>
+        <Menu></Menu>
       </v-navigation-drawer>
 
       <v-navigation-drawer
@@ -104,11 +104,35 @@ export default class about extends Vue {
   drawer2: boolean = false
 
   df: any = {}
-  xml: any = null
+
+  get style(): {} {
+    return this.$store.getters.getStyle
+  }
+
+  set style(value) {
+    this.$store.commit('setStyle', value)
+  }
+
+  get xml(): {} {
+    return this.$store.getters.getXml
+  }
+
+  set xml(value) {
+    this.$store.commit('setXml', value)
+  }
 
   async created() {
     this.loading = true
     const query = this.$route.query
+
+    // スタイル
+    if (query.style) {
+      const style: any = query.style || 'assets/styles/default.json'
+      const result2 = await axios.get(style)
+      this.style = result2.data
+    }
+
+    // XML
     const u: any = query.u || 'data/small.xml'
     const result = await axios.get(u)
     let xml = result.data
