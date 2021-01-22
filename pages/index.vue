@@ -126,11 +126,9 @@ export default class about extends Vue {
     const query = this.$route.query
 
     // スタイル
-    if (query.style) {
-      const style: any = query.style || 'assets/styles/default.json'
-      const result2 = await axios.get(style)
-      this.style = result2.data
-    }
+    const style: any = query.style || 'data/shibusawa.json'
+    const result2 = await axios.get(style)
+    this.style = result2.data
 
     // XML
     const u: any = query.u || 'data/small.xml'
