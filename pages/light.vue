@@ -278,6 +278,8 @@ export default {
         console.log(error)
       })
 
+    this.loading = false
+
     /*
         const result = await axios.get(u)
 

@@ -5,7 +5,6 @@
         ><h3>{{ $t('コンテンツ') }}</h3></v-list-item-title
       >
     </v-list-item>
-    {{ model }}
     <v-list-item-group v-model="model">
       <v-list-item
         v-for="(item, key) in items"
