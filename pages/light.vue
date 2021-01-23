@@ -225,12 +225,22 @@ export default {
             return a
           }
         },
+        figure(el) {
+          // eslint-disable-next-line nuxt/no-globals-in-created
+          const a = document.createElement('div')
+          a.setAttribute('style', 'padding: 20px;')
+          a.innerHTML = el.innerHTML
+          return a
+        },
       },
     })
 
     const self = this
     CETEIcean.getHTML5(u, function (data) {
+      console.log(data)
       self.teiHTML = data.outerHTML
+
+      self.loading = false
 
       // eslint-disable-next-line nuxt/no-globals-in-created
       window.setTimeout(function () {

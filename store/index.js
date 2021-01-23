@@ -1,6 +1,7 @@
 export const state = () => ({
   style: {},
   xml: null,
+  result: null,
 })
 
 export const mutations = {
@@ -10,6 +11,9 @@ export const mutations = {
   setXml(state, value) {
     state.xml = value
   },
+  setResult(state, value) {
+    state.result = value
+  },
 }
 
 export const getters = {
@@ -18,5 +22,8 @@ export const getters = {
   },
   getXml(state) {
     return state.xml
+  },
+  getResult(state) {
+    return state.result
   },
 }

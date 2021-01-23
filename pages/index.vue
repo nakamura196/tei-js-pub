@@ -1,6 +1,10 @@
 <template>
   <div>
-    <div>
+    <template v-if="collectionFlag">
+      <Collection></Collection>
+    </template>
+
+    <template v-if="itemFlag">
       <v-navigation-drawer
         v-model="drawer"
         app
@@ -49,28 +53,28 @@
 
         <v-app-bar-nav-icon @click.stop="drawer2 = !drawer2" />
       </v-app-bar>
-    </div>
 
-    <template v-if="loading"
-      ><div class="pa-10 text-center">
-        <v-progress-circular
-          indeterminate
-          color="primary"
-        ></v-progress-circular>
+      <template v-if="loading"
+        ><div class="pa-10 text-center">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+          ></v-progress-circular>
+        </div>
+      </template>
+
+      <div class="px-10 pt-10" :style="`width: ${width}px;`">
+        <v-card
+          id="container"
+          class="scroll vertical pa-5"
+          outlined
+          flat
+          :style="`height: ${height * 0.85}px;`"
+        >
+          <Main :elements="df.elements"></Main>
+        </v-card>
       </div>
     </template>
-
-    <div class="px-10 pt-10" :style="`width: ${width}px;`">
-      <v-card
-        id="container"
-        class="scroll vertical pa-5"
-        outlined
-        flat
-        :style="`height: ${height * 0.85}px;`"
-      >
-        <Main :elements="df.elements"></Main>
-      </v-card>
-    </div>
   </div>
 </template>
 
@@ -81,6 +85,7 @@ import VueScrollTo from 'vue-scrollto'
 import Main from '~/components/Main.vue'
 import Menu from '~/components/Menu.vue'
 import Metadata from '~/components/Metadata.vue'
+import Collection from '~/components/Collection.vue'
 
 const convert = require('xml-js')
 
@@ -89,12 +94,16 @@ const convert = require('xml-js')
     Main,
     Menu,
     Metadata,
+    Collection,
   },
 })
 export default class about extends Vue {
   baseUrl: string = process.env.BASE_URL || ''
   siteName: string = process.env.siteName || ''
   github: string = process.env.github || ''
+
+  collectionFlag: boolean = false
+  itemFlag: boolean = false
 
   loading: boolean = false
 
@@ -124,6 +133,14 @@ export default class about extends Vue {
     this.$store.commit('setXml', value)
   }
 
+  get result(): {} {
+    return this.$store.getters.getResult
+  }
+
+  set result(value) {
+    this.$store.commit('setResult', value)
+  }
+
   async created() {
     this.loading = true
     const query = this.$route.query
@@ -138,6 +155,15 @@ export default class about extends Vue {
     // XML
     const u: any = query.u || 'data/small.xml'
     const result = await axios.get(u)
+
+    this.result = result.data
+
+    if (result.data['@context']) {
+      this.collectionFlag = true
+      return
+    }
+
+    this.itemFlag = true
 
     let endTime = Date.now() // 終了時間
     console.log('downloaded', endTime - startTime)

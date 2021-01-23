@@ -16,5 +16,8 @@
   },
   "div[type=\"archival-description\"]": {
     "padding-top": "100px"
+  },
+  "figure": {
+    "padding": "20px"
   }
 }
