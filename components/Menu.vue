@@ -5,24 +5,30 @@
         ><h3>{{ $t('コンテンツ') }}</h3></v-list-item-title
       >
     </v-list-item>
-    <v-list-item
-      v-for="(item, key) in items"
-      :key="key"
-      link
-      @click="scroll(item.id)"
-    >
-      <v-list-item-action> </v-list-item-action>
-      <v-list-item-content> {{ item.label }} </v-list-item-content>
-    </v-list-item>
+    {{ model }}
+    <v-list-item-group v-model="model">
+      <v-list-item
+        v-for="(item, key) in items"
+        :key="key"
+        link
+        @click="scroll(item.id)"
+      >
+        <v-list-item-action> </v-list-item-action>
+        <v-list-item-content> {{ item.label }} </v-list-item-content>
+      </v-list-item>
+    </v-list-item-group>
   </v-list>
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'nuxt-property-decorator'
+import { Vue, Component, Prop } from 'nuxt-property-decorator'
 import VueScrollTo from 'vue-scrollto'
 
 @Component({})
 export default class Menu extends Vue {
+  @Prop()
+  id: any
+
   get xml(): any {
     return this.$store.getters.getXml
   }
@@ -30,6 +36,8 @@ export default class Menu extends Vue {
   set xml(value) {
     this.$store.commit('setXml', value)
   }
+
+  model: number = 0
 
   get items() {
     const xml = this.xml
@@ -42,15 +50,18 @@ export default class Menu extends Vue {
     const divs = xml.querySelectorAll('div')
     for (let i = 0; i < divs.length; i++) {
       const div = divs[i]
-
       const children = div.children
       for (let j = 0; j < children.length; j++) {
         const child = children[j]
         if (child.nodeName === 'head') {
+          const id = div.attributes['xml:id'].value
           items.push({
             label: child.textContent,
-            id: div.attributes['xml:id'].value,
+            id,
           })
+          if (this.id === id) {
+            this.model = items.length - 1
+          }
         }
       }
     }

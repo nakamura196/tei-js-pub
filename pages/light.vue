@@ -7,7 +7,7 @@
         :temporary="true"
         :width="(256 * 3) / 2"
       >
-        <Menu></Menu>
+        <Menu :id="$route.query.id"></Menu>
       </v-navigation-drawer>
 
       <v-navigation-drawer
@@ -158,7 +158,7 @@ export default {
           const a = document.createElement('a')
           a.setAttribute(
             'href',
-            'https://shibusawa-lab.github.io/lab1/entity/agential/' +
+            'https://shibusawa-dlab.github.io/lab1/entity/agential/' +
               el.textContent
           )
           a.setAttribute('target', '_blank')
@@ -174,7 +174,7 @@ export default {
           const a = document.createElement('a')
           a.setAttribute(
             'href',
-            'https://shibusawa-lab.github.io/lab1/entity/spatial/' +
+            'https://shibusawa-dlab.github.io/lab1/entity/spatial/' +
               el.textContent
           )
           a.setAttribute('target', '_blank')
@@ -237,30 +237,46 @@ export default {
 
     const self = this
     CETEIcean.getHTML5(u, function (data) {
-      console.log(data)
+      // console.log(data)
       self.teiHTML = data.outerHTML
+
+      console.log('check 1')
 
       self.loading = false
 
+      console.log('check 5')
+
       // eslint-disable-next-line nuxt/no-globals-in-created
       window.setTimeout(function () {
+        console.log('check 2')
         self.loading = false
         self.scroll()
       }, 0)
     })
 
-    const result = await axios.get(u)
+    // const result = await axios.get(u)
 
-    const endTime = Date.now() // 終了時間
-    console.log('downloaded', endTime - startTime)
+    console.log('check 3')
 
-    let xml = result.data
-    if (typeof xml === 'string') {
-      const dpObj = new DOMParser()
-      xml = dpObj.parseFromString(xml, 'text/xml')
-    }
+    axios
+      .get(u)
+      .then(function (response) {
+        const endTime = Date.now() // 終了時間
+        console.log('downloaded', endTime - startTime)
 
-    this.xml = xml
+        console.log('check 4')
+
+        let xml = response.data
+        if (typeof xml === 'string') {
+          const dpObj = new DOMParser()
+          xml = dpObj.parseFromString(xml, 'text/xml')
+        }
+
+        self.xml = xml
+      })
+      .catch(function (error) {
+        console.log(error)
+      })
 
     /*
         const result = await axios.get(u)
