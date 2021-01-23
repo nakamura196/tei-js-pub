@@ -43,7 +43,10 @@
 
             <div class="pa-4">
               <a
-                :href="localePath({ name: 'light', query: { u: obj['@id'] } })"
+                :href="
+                  baseUrl +
+                  localePath({ name: 'light', query: { u: obj['@id'] } })
+                "
               >
                 <h4>{{ obj.label }}</h4>
               </a>
