@@ -1,7 +1,7 @@
 <template>
   <span>
     <template v-for="(obj, key) in elements">
-      <template v-if="obj.text">
+      <template v-if="obj.type == 'text'">
         <span :key="key">{{ obj.text }}</span>
       </template>
       <template v-else>
@@ -9,12 +9,10 @@
           :id="obj.attributes ? obj.attributes['xml:id'] : null"
           :key="key"
           :class="'tei-' + obj.name"
-          :style="
-            getStyle(obj.name, obj.attributes ? obj.attributes.type : null)
-          "
-          :type="obj.attributes ? obj.attributes.type : null"
+          :style="getStyle(obj.name, getType(obj.attributes))"
+          :type="getType(obj.attributes)"
         >
-          <Main v-if="obj.elements" :key="key" :elements="obj.elements"></Main>
+          <Main :key="key" :elements="obj.elements"></Main>
         </span>
       </template>
     </template>
@@ -23,7 +21,6 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'nuxt-property-decorator'
-import axios from 'axios'
 import Main from '~/components/Main.vue'
 
 @Component({
@@ -44,7 +41,12 @@ export default class Main2 extends Vue {
     this.$store.commit('setStyle', value)
   }
 
+  getType(data: any) {
+    return data ? data.type : null
+  }
+
   getStyle(name: string, type: any = null) {
+    // console.log(name)
     const result: string[] = []
 
     let key = name

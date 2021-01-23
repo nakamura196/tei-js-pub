@@ -17,6 +17,7 @@
     "@nuxtjs/google-analytics": "^2.4.0",
     "@nuxtjs/pwa": "^3.0.2",
     "@nuxtjs/sitemap": "^2.4.0",
+    "CETEIcean": "^1.3.0",
     "algoliasearch": "^4.6.0",
     "core-js": "^3.6.5",
     "cross-env": "^7.0.2",

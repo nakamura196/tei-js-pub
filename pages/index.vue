@@ -59,6 +59,7 @@
         ></v-progress-circular>
       </div>
     </template>
+
     <div class="px-10 pt-10" :style="`width: ${width}px;`">
       <v-card
         id="container"
@@ -104,6 +105,8 @@ export default class about extends Vue {
   drawer2: boolean = false
 
   df: any = {}
+  xmlStr: string = ''
+  teiHTML: any = null
 
   get style(): {} {
     return this.$store.getters.getStyle
@@ -125,6 +128,8 @@ export default class about extends Vue {
     this.loading = true
     const query = this.$route.query
 
+    const startTime = Date.now() // 開始時間
+
     // スタイル
     const style: any = query.style || 'data/shibusawa.json'
     const result2 = await axios.get(style)
@@ -133,6 +138,10 @@ export default class about extends Vue {
     // XML
     const u: any = query.u || 'data/small.xml'
     const result = await axios.get(u)
+
+    let endTime = Date.now() // 終了時間
+    console.log('downloaded', endTime - startTime)
+
     let xml = result.data
     if (typeof xml === 'string') {
       const dpObj = new DOMParser()
@@ -142,15 +151,26 @@ export default class about extends Vue {
     this.xml = xml
 
     const xmlStr = new XMLSerializer().serializeToString(xml)
+    this.xmlStr = xmlStr
+
+    endTime = Date.now() // 終了時間
+    console.log('converted to xml string', endTime - startTime)
 
     const dfStr = convert.xml2json(xmlStr, { compact: false, spaces: 4 })
     const df = JSON.parse(dfStr)
+
     this.df = df
+
+    endTime = Date.now() // 終了時間
+    console.log('converted to json', endTime - startTime)
 
     const self = this
     window.setTimeout(function () {
       self.loading = false
       self.scroll()
+
+      endTime = Date.now() // 終了時間
+      console.log('loaded', endTime - startTime)
     }, 0)
   }
 
