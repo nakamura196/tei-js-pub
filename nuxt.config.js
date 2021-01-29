@@ -166,7 +166,7 @@ export default {
   css: [],
 
   // Plugins to run before rendering page (https://go.nuxtjs.dev/config-plugins)
-  plugins: ['~/plugins/vue-scrollto', '~plugins/bootstrap.js'],
+  plugins: ['~/plugins/vue-scrollto'],
 
   // Auto import components (https://go.nuxtjs.dev/config-components)
   components: true,
