@@ -92,6 +92,12 @@ export default {
         content: 'black-translucent',
       },
     ],
+    script: [
+      {
+        src: 'https://code.jquery.com/jquery-3.3.1.slim.min.js',
+        type: 'text/javascript',
+      },
+    ],
     link: [
       {
         rel: 'icon',
@@ -160,7 +166,7 @@ export default {
   css: [],
 
   // Plugins to run before rendering page (https://go.nuxtjs.dev/config-plugins)
-  plugins: ['~/plugins/vue-scrollto'],
+  plugins: ['~/plugins/vue-scrollto', '~plugins/bootstrap.js'],
 
   // Auto import components (https://go.nuxtjs.dev/config-components)
   components: true,
