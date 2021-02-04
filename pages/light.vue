@@ -3,6 +3,7 @@
     <div>
       <v-navigation-drawer
         v-model="drawer"
+        style="z-index: 100000"
         app
         :temporary="true"
         :width="(256 * 3) / 2"
@@ -10,6 +11,7 @@
         <Menu :id="$route.query.id"></Menu>
       </v-navigation-drawer>
 
+      <!--
       <v-navigation-drawer
         v-model="drawer2"
         app
@@ -17,15 +19,16 @@
         right
         :width="256 * 2"
       >
-        <Metadata v-if="xml" :xml="xml"></Metadata>
+        <Metadata></Metadata>
       </v-navigation-drawer>
+      -->
 
-      <v-app-bar color="primary" dark>
+      <v-app-bar color="primary" dark flat>
         <v-btn icon @click="drawer = !drawer"
           ><v-icon>mdi-view-list</v-icon></v-btn
         >
         <v-toolbar-title>
-          {{ '渋沢栄一伝記資料別巻第一日記のTEIマークアップ' }}
+          <Title></Title>
         </v-toolbar-title>
 
         <v-spacer></v-spacer>
@@ -47,7 +50,7 @@
           </v-list>
         </v-menu>
 
-        <v-app-bar-nav-icon @click.stop="drawer2 = !drawer2" />
+        <!-- <v-app-bar-nav-icon @click.stop="drawer2 = !drawer2" /> -->
       </v-app-bar>
     </div>
 
@@ -60,34 +63,52 @@
       </div>
     </template>
 
-    <div class="px-10 pt-10" :style="`width: ${width}px;`">
-      <v-card
-        id="container"
-        class="scroll vertical pa-5"
-        outlined
-        flat
-        :style="`height: ${height * 0.85}px;`"
-      >
-        <div id="tei" v-html="teiHTML" />
-      </v-card>
-    </div>
+    <v-container fluid>
+      <v-row class="mt-2">
+        <v-col cols="12" :sm="manifest ? 6 : 12">
+          <v-card
+            id="container"
+            flat
+            outlined
+            class="scroll vertical"
+            :style="`height: ${height * 0.85}px; width: ${
+              manifest ? width / 2 : width
+            }px;`"
+          >
+            <div class="pa-4 px-5">
+              <div id="tei" />
+            </div>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" :sm="manifest ? 6 : 12">
+          <iframe
+            v-show="!loading"
+            v-if="manifest"
+            :src="`curation/?manifest=${manifest}&canvas=${canvas}`"
+            width="100%"
+            :style="`height: ${height * 0.85}px;`"
+            allowfullscreen="allowfullscreen"
+            frameborder="0"
+          >
+          </iframe>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
 <script>
-import axios from 'axios'
 import CETEI from 'CETEIcean'
 import VueScrollTo from 'vue-scrollto'
-// import Main from '~/components/Main.vue'
-import Menu from '~/components/Menu.vue'
-import Metadata from '~/components/Metadata.vue'
-
-// const convert = require('xml-js')
+import $ from 'jquery'
+import Menu from '~/components/Menu2.vue'
+import Title from '~/components/Title.vue'
 
 export default {
   components: {
     Menu,
-    Metadata,
+    Title,
   },
   data() {
     return {
@@ -104,9 +125,9 @@ export default {
       drawer: false,
       drawer2: false,
 
-      df: {},
-      xmlStr: '',
-      teiHTML: null,
+      // pos: 1,
+      canvas: '',
+      manifest: null,
     }
   },
   head() {
@@ -136,187 +157,121 @@ export default {
     },
   },
 
-  async created() {
+  mounted() {
     this.loading = true
+
+    window.addEventListener('resize', this.handleResize)
+
     const query = this.$route.query
-
-    const startTime = Date.now() // 開始時間
-
-    // スタイル
-    const style = query.style || 'data/shibusawa.json'
-    const result2 = await axios.get(style)
-    this.style = result2.data
-
-    // XML
-    const u = query.u || 'data/small.xml'
-
+    const url = query.u || 'data/small.xml'
     const CETEIcean = new CETEI()
 
-    /*
-    CETEIcean.addBehaviors({
-      tei: {
-        persName(el) {
-          // eslint-disable-next-line nuxt/no-globals-in-created
-          const a = document.createElement('a')
-          a.setAttribute(
-            'href',
-            'https://shibusawa-dlab.github.io/lab1/entity/agential/' +
-              el.textContent
-          )
-          a.setAttribute('target', '_blank')
-          a.setAttribute(
-            'style',
-            'text-decoration: none; color: black; background-color: #ffccbc;'
-          )
-          a.innerHTML = el.innerHTML
-          return a
-        },
-        placeName(el) {
-          // eslint-disable-next-line nuxt/no-globals-in-created
-          const a = document.createElement('a')
-          a.setAttribute(
-            'href',
-            'https://shibusawa-dlab.github.io/lab1/entity/spatial/' +
-              el.textContent
-          )
-          a.setAttribute('target', '_blank')
-          a.setAttribute(
-            'style',
-            'text-decoration: none; color: black; background-color: #c8e6c9;'
-          )
-          a.innerHTML = el.innerHTML
-          return a
-        },
-        time(el) {
-          // eslint-disable-next-line nuxt/no-globals-in-created
-          const a = document.createElement('span')
-          a.setAttribute('style', 'background-color: #fff9c4;')
-          a.innerHTML = el.innerHTML
-          return a
-        },
-        date(el) {
-          // eslint-disable-next-line nuxt/no-globals-in-created
-          const a = document.createElement('span')
-          a.setAttribute('style', 'background-color: #bbdefb;')
-          a.innerHTML = el.innerHTML
-          return a
-        },
-        head(el) {
-          // eslint-disable-next-line nuxt/no-globals-in-created
-          const a = document.createElement('div')
-          a.setAttribute(
-            'style',
-            'padding: 20px; font-size: large; font-weight: bold;'
-          )
-          a.innerHTML = el.innerHTML
-          return a
-        },
-        ab(el) {
-          // eslint-disable-next-line nuxt/no-globals-in-created
-          const a = document.createElement('div')
-          a.setAttribute('style', 'padding: 20px;')
-          a.innerHTML = el.innerHTML
-          return a
-        },
-        div(el) {
-          if (el.getAttribute('type') === 'archival-description') {
-            // eslint-disable-next-line nuxt/no-globals-in-created
-            const a = document.createElement('div')
-            a.setAttribute('style', 'padding-top: 100px;')
-            a.innerHTML = el.innerHTML
-            return a
-          }
-        },
-        figure(el) {
-          // eslint-disable-next-line nuxt/no-globals-in-created
-          const a = document.createElement('div')
-          a.setAttribute('style', 'padding: 20px;')
-          a.innerHTML = el.innerHTML
-          return a
-        },
-      },
-    })
-    */
-
     const self = this
-    CETEIcean.getHTML5(u, function (data) {
-      // console.log(data)
-      self.teiHTML = data.outerHTML
+    CETEIcean.getHTML5(url, function (data) {
+      self.xml = data
 
+      // graphicへの対応
+      const sources = data.getElementsByTagName('tei-graphic')
+      for (let i = 0; i < sources.length; i++) {
+        const source = sources[i]
+        $(source).removeAttr('url')
+      }
+
+      $('#tei').append(data)
+
+      // マニフェスト
+      const manifest = $('tei-facsimile').attr('source')
+      self.manifest = manifest
+
+      const pbs = $('tei-pb')
+      for (let i = 0; i < pbs.length; i++) {
+        const pb = pbs[i]
+
+        if (!$(pb).attr('corresp')) {
+          continue
+        }
+        const corresp = $(pb).attr('corresp').replace('#', '')
+
+        const source = $('#' + corresp)
+        const canvas = source.attr('source')
+
+        source.text = ''
+
+        const iiificon = $(
+          `<img width="30px" class="ma-1" style="cursor: pointer; color: green;" src="${self.baseUrl}/img/icons/image-24px.svg"/>`
+        )
+        iiificon.on('click', function () {
+          self.canvas = canvas
+        })
+        $(pb).prepend(iiificon)
+
+        iiificon.after(
+          `<span class="ma-1" style="color : #9E9E9E">[Page @${$(pb).attr(
+            'corresp'
+          )}]</span>`
+        )
+      }
+
+      let elements = ['tei-persname', 'tei-placename']
+
+      const prefix = ['chname', 'place']
+
+      let count = 0
+
+      /*
+
+      for (let j = 0; j < elements.length; j++) {
+        const es = $(elements[j])
+        for (let i = 0; i < es.length; i++) {
+          const e = $(es[i])
+          const textContent = $(e)[0].textContent
+          const url = `https://shibusawa-dlab.github.io/lab1/snorql/?describe=https://nakamura196.github.io/repo/api/${prefix[j]}/${textContent}`
+
+          const outerHTML = $('<div />').append($(e).clone()).html()
+
+          const a = $(
+            `<a href="${url}" target="_blank" style="text-decoration: none; color: inherit;">${outerHTML}</a>`
+          )
+
+          e.replaceWith(a)
+
+          count += 1
+        }
+      }
+
+      */
+
+      console.log({ count })
+
+      count = 0
+
+      elements = ['tei-date', 'tei-time']
+
+      /*
+
+      for (let j = 0; j < elements.length; j++) {
+        const dates = $(elements[j])
+        for (let i = 0; i < dates.length; i++) {
+          const date = $(dates[i])
+          date.attr('tooltip', date.attr('when'))
+          date.attr('flow', 'right')
+
+          count += 1
+        }
+      }
+
+      */
+
+      console.log({ count })
+
+      // $('#tei').append(data)
+
+      self.scroll()
+
+      /*
+       */
       self.loading = false
-
-      // eslint-disable-next-line nuxt/no-globals-in-created
-      window.setTimeout(function () {
-        self.loading = false
-        self.scroll()
-      }, 0)
     })
-
-    // const result = await axios.get(u)
-
-    axios
-      .get(u)
-      .then(function (response) {
-        const endTime = Date.now() // 終了時間
-        console.log('downloaded', endTime - startTime)
-
-        let xml = response.data
-        if (typeof xml === 'string') {
-          const dpObj = new DOMParser()
-          xml = dpObj.parseFromString(xml, 'text/xml')
-        }
-
-        self.xml = xml
-      })
-      .catch(function (error) {
-        console.log(error)
-      })
-
-    // this.loading = false
-
-    /*
-        const result = await axios.get(u)
-
-        let endTime = Date.now() // 終了時間
-        console.log('downloaded', endTime - startTime)
-
-        let xml = result.data
-        if (typeof xml === 'string') {
-        const dpObj = new DOMParser()
-        xml = dpObj.parseFromString(xml, 'text/xml')
-        }
-
-        this.xml = xml
-
-        const xmlStr = new XMLSerializer().serializeToString(xml)
-        this.xmlStr = xmlStr
-
-        endTime = Date.now() // 終了時間
-        console.log('converted to xml string', endTime - startTime)
-
-        const dfStr = convert.xml2json(xmlStr, { compact: false, spaces: 4 })
-        const df = JSON.parse(dfStr)
-
-        this.df = df
-
-        endTime = Date.now() // 終了時間
-        console.log('converted to json', endTime - startTime)
-
-        */
-
-    /*
-        window.setTimeout(function () {
-        self.loading = false
-        self.scroll()
-
-        // endTime = Date.now() // 終了時間
-        // console.log('loaded', endTime - startTime)
-        }, 0)
-        */
-  },
-
-  mounted() {
-    window.addEventListener('resize', this.handleResize)
   },
 
   methods: {
@@ -331,14 +286,14 @@ export default {
       if (query.id) {
         const id = query.id
 
-        const point = document.querySelector('#' + id).getBoundingClientRect()
+        // const point = document.querySelector('#' + id).getBoundingClientRect()
         const point2 = document
           .querySelector('#container')
           .getBoundingClientRect()
 
         const options = {
           container: '#container',
-          offset: -1 * point2.width + point.width,
+          offset: -1 * point2.width, // + point.width,
           x: true,
         }
         VueScrollTo.scrollTo('#' + id, 0, options)
@@ -378,5 +333,160 @@ tei-head {
   margin: 20px;
   font-size: large !important;
   font-weight: bold;
+}
+
+/* START TOOLTIP STYLES */
+[tooltip] {
+  position: relative; /* opinion 1 */
+}
+
+/* Applies to all tooltips */
+[tooltip]::before,
+[tooltip]::after {
+  text-transform: none; /* opinion 2 */
+  font-size: 15px;
+  font-weight: normal;
+  /*font-size: 0.9em;*/ /* opinion 3 */
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+  position: absolute;
+  display: none;
+  opacity: 0;
+}
+[tooltip]::before {
+  content: '';
+  border: 5px solid transparent; /* opinion 4 */
+  z-index: 1001; /* absurdity 1 */
+}
+[tooltip]::after {
+  content: attr(tooltip); /* magic! */
+
+  /* most of the rest of this is opinion */
+  font-family: Helvetica, sans-serif;
+  text-align: center;
+
+  /*
+    Let the content set the size of the tooltips
+    but this will also keep them from being obnoxious
+    */
+  min-width: 3em;
+  max-width: 21em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /*padding: 1ch 1.5ch;*/
+  padding: 1.5ch;
+  border-radius: 0.3ch;
+  box-shadow: 0 1em 2em -0.5em rgba(0, 0, 0, 0.35);
+  background: #333;
+  color: #fff;
+  z-index: 1000; /* absurdity 2 */
+}
+
+/* Make the tooltips respond to hover */
+[tooltip]:hover::before,
+[tooltip]:hover::after {
+  display: block;
+}
+
+/* don't show empty tooltips */
+[tooltip='']::before,
+[tooltip='']::after {
+  display: none !important;
+}
+
+/* FLOW: UP */
+[tooltip]:not([flow])::before,
+[tooltip][flow^='up']::before {
+  bottom: 100%;
+  border-bottom-width: 0;
+  border-top-color: #333;
+}
+[tooltip]:not([flow])::after,
+[tooltip][flow^='up']::after {
+  bottom: calc(100% + 5px);
+}
+[tooltip]:not([flow])::before,
+[tooltip]:not([flow])::after,
+[tooltip][flow^='up']::before,
+[tooltip][flow^='up']::after {
+  left: 50%;
+  transform: translate(-50%, -0.5em);
+}
+
+/* FLOW: DOWN */
+[tooltip][flow^='down']::before {
+  top: 100%;
+  border-top-width: 0;
+  border-bottom-color: #333;
+}
+[tooltip][flow^='down']::after {
+  top: calc(100% + 5px);
+}
+[tooltip][flow^='down']::before,
+[tooltip][flow^='down']::after {
+  left: 50%;
+  transform: translate(-50%, 0.5em);
+}
+
+/* FLOW: LEFT */
+[tooltip][flow^='left']::before {
+  top: 50%;
+  border-right-width: 0;
+  border-left-color: #333;
+  left: calc(0em - 5px);
+  transform: translate(-0.5em, -50%);
+}
+[tooltip][flow^='left']::after {
+  top: 50%;
+  right: calc(100% + 5px);
+  transform: translate(-0.5em, -50%);
+}
+
+/* FLOW: RIGHT */
+[tooltip][flow^='right']::before {
+  top: 50%;
+  border-left-width: 0;
+  border-right-color: #333;
+  right: calc(0em - 5px);
+  transform: translate(0.5em, -50%);
+}
+[tooltip][flow^='right']::after {
+  top: 50%;
+  left: calc(100% + 5px);
+  transform: translate(0.5em, -50%);
+}
+
+/* KEYFRAMES */
+@keyframes tooltips-vert {
+  to {
+    opacity: 0.9;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes tooltips-horz {
+  to {
+    opacity: 0.9;
+    transform: translate(0, -50%);
+  }
+}
+
+/* FX All The Things */
+[tooltip]:not([flow]):hover::before,
+[tooltip]:not([flow]):hover::after,
+[tooltip][flow^='up']:hover::before,
+[tooltip][flow^='up']:hover::after,
+[tooltip][flow^='down']:hover::before,
+[tooltip][flow^='down']:hover::after {
+  animation: tooltips-vert 300ms ease-out forwards;
+}
+
+[tooltip][flow^='left']:hover::before,
+[tooltip][flow^='left']:hover::after,
+[tooltip][flow^='right']:hover::before,
+[tooltip][flow^='right']:hover::after {
+  animation: tooltips-horz 300ms ease-out forwards;
 }
 </style>

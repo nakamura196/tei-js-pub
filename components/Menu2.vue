@@ -53,6 +53,9 @@ export default class Menu extends Vue {
       for (let j = 0; j < children.length; j++) {
         const child = children[j]
         if (child.nodeName === 'TEI-HEAD') {
+          if (!div.attributes['xml:id']) {
+            continue
+          }
           const id = div.attributes['xml:id'].value
           items.push({
             label: child.textContent,
