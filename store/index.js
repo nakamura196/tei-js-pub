@@ -2,6 +2,9 @@ export const state = () => ({
   style: {},
   xml: null,
   result: null,
+  canvas: null,
+  facs: null,
+  id: null,
 })
 
 export const mutations = {
@@ -14,6 +17,15 @@ export const mutations = {
   setResult(state, value) {
     state.result = value
   },
+  setCanvas(state, value) {
+    state.canvas = value
+  },
+  setFacs(state, value) {
+    state.facs = value
+  },
+  setId(state, value) {
+    state.id = value
+  },
 }
 
 export const getters = {
@@ -25,5 +37,14 @@ export const getters = {
   },
   getResult(state) {
     return state.result
+  },
+  getCanvas(state) {
+    return state.canvas
+  },
+  getFacs(state) {
+    return state.facs
+  },
+  getId(state) {
+    return state.id
   },
 }
