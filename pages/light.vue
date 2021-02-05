@@ -11,17 +11,15 @@
         <Menu :id="$route.query.id" :items="items"></Menu>
       </v-navigation-drawer>
 
-      <!--
       <v-navigation-drawer
         v-model="drawer2"
         app
-        :temporary="true"
+        :temporary="false"
         right
         :width="256 * 2"
       >
         <Metadata></Metadata>
       </v-navigation-drawer>
-      -->
 
       <v-app-bar color="primary" dark flat>
         <v-btn icon @click="drawer = !drawer"
@@ -50,7 +48,7 @@
           </v-list>
         </v-menu>
 
-        <!-- <v-app-bar-nav-icon @click.stop="drawer2 = !drawer2" /> -->
+        <v-app-bar-nav-icon @click.stop="drawer2 = !drawer2" />
       </v-app-bar>
     </div>
 
@@ -65,16 +63,40 @@
 
     <v-container fluid>
       <v-row>
-        <v-col
-          ><v-btn fab dark small @click="index -= 1">
-            <v-icon dark> mdi-menu-left </v-icon>
-          </v-btn></v-col
-        >
-        <v-col class="text-right"
-          ><v-btn fab dark small @click="index += 1">
-            <v-icon dark> mdi-menu-right </v-icon>
-          </v-btn></v-col
-        >
+        <v-col>
+          <v-tooltip bottom>
+            <template #activator="{ on }">
+              <v-btn
+                v-show="index != 0"
+                fab
+                dark
+                small
+                @click="index -= 1"
+                v-on="on"
+              >
+                <v-icon dark> mdi-menu-left </v-icon>
+              </v-btn>
+            </template>
+            <span>{{ $t('previous') }}</span>
+          </v-tooltip>
+        </v-col>
+        <v-col class="text-right">
+          <v-tooltip bottom>
+            <template #activator="{ on }">
+              <v-btn
+                v-show="index != divs2.length - 1"
+                fab
+                dark
+                small
+                @click="index += 1"
+                v-on="on"
+              >
+                <v-icon dark> mdi-menu-right </v-icon>
+              </v-btn>
+            </template>
+            <span>{{ $t('next') }}</span>
+          </v-tooltip>
+        </v-col>
       </v-row>
 
       <v-row class="mt-2">
@@ -84,7 +106,7 @@
             flat
             outlined
             class="scroll vertical"
-            :style="`height: ${height * 0.85}px; width: ${
+            :style="`height: ${height * 0.8}px; width: ${
               manifest ? width / 2 : width
             }px;`"
           >
@@ -100,7 +122,7 @@
             v-if="manifest"
             :src="`curation/?manifest=${manifest}&canvas=${canvas}`"
             width="100%"
-            :style="`height: ${height * 0.85}px;`"
+            :style="`height: ${height * 0.8}px;`"
             allowfullscreen="allowfullscreen"
             frameborder="0"
           >
@@ -115,6 +137,7 @@
 import CETEI from 'CETEIcean'
 import $ from 'jquery'
 import Menu from '~/components/Menu3.vue'
+import Metadata from '~/components/Metadata3.vue'
 import Title from '~/components/Title.vue'
 import aaa from '~/components/aaa.vue'
 
@@ -123,6 +146,7 @@ const convert = require('xml-js')
 export default {
   components: {
     Menu,
+    Metadata,
     Title,
     aaa,
   },
@@ -240,7 +264,7 @@ export default {
     window.addEventListener('resize', this.handleResize)
 
     const query = this.$route.query
-    const url = query.u || 'data/small.xml'
+    const url = query.u || this.baseUrl + '/data/small.xml'
     const CETEIcean = new CETEI()
 
     const id = this.$route.query.id

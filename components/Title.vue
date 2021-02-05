@@ -19,13 +19,16 @@ export default class Menu extends Vue {
 
   get title() {
     const xml = this.xml
+    const title = 'TEI Viewer'
     if (!xml) {
-      return 'TEI Viewer'
+      return title
     }
 
-    const title = xml.querySelector('tei-title').textContent
-
-    return title
+    if (xml.querySelector('tei-title')) {
+      return xml.querySelector('tei-title').textContent
+    } else {
+      return title
+    }
   }
 }
 </script>
