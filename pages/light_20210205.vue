@@ -5,10 +5,10 @@
         v-model="drawer"
         style="z-index: 100000"
         app
-        :temporary="false"
+        :temporary="true"
         :width="(256 * 3) / 2"
       >
-        <Menu :id="$route.query.id" :items="items"></Menu>
+        <Menu :id="$route.query.id"></Menu>
       </v-navigation-drawer>
 
       <!--
@@ -64,19 +64,6 @@
     </template>
 
     <v-container fluid>
-      <v-row>
-        <v-col
-          ><v-btn fab dark small @click="index -= 1">
-            <v-icon dark> mdi-menu-left </v-icon>
-          </v-btn></v-col
-        >
-        <v-col class="text-right"
-          ><v-btn fab dark small @click="index += 1">
-            <v-icon dark> mdi-menu-right </v-icon>
-          </v-btn></v-col
-        >
-      </v-row>
-
       <v-row class="mt-2">
         <v-col cols="12" :sm="manifest ? 6 : 12">
           <v-card
@@ -89,7 +76,7 @@
             }px;`"
           >
             <div class="pa-4 px-5">
-              <aaa v-if="divs2.length > 0" :element="bbb(divs2[index])"></aaa>
+              <div id="tei" />
             </div>
           </v-card>
         </v-col>
@@ -113,18 +100,15 @@
 
 <script>
 import CETEI from 'CETEIcean'
+import VueScrollTo from 'vue-scrollto'
 import $ from 'jquery'
-import Menu from '~/components/Menu3.vue'
+import Menu from '~/components/Menu2.vue'
 import Title from '~/components/Title.vue'
-import aaa from '~/components/aaa.vue'
-
-const convert = require('xml-js')
 
 export default {
   components: {
     Menu,
     Title,
-    aaa,
   },
   data() {
     return {
@@ -142,16 +126,8 @@ export default {
       drawer2: false,
 
       // pos: 1,
-      // canvas: '',
+      canvas: '',
       manifest: null,
-
-      index: 0,
-      divs: [],
-      ids: {},
-      ids2: {},
-      divs2: [],
-
-      items: [],
     }
   },
   head() {
@@ -179,59 +155,6 @@ export default {
         this.$store.commit('setXml', value)
       },
     },
-
-    facs: {
-      get() {
-        return this.$store.getters.getFacs
-      },
-      set(value) {
-        this.$store.commit('setFacs', value)
-      },
-    },
-
-    canvas: {
-      get() {
-        return this.$store.getters.getCanvas
-      },
-      set(value) {
-        this.$store.commit('setCanvas', value)
-      },
-    },
-
-    id: {
-      get() {
-        return this.$store.getters.getId
-      },
-      set(value) {
-        this.$store.commit('setId', value)
-      },
-    },
-  },
-
-  watch: {
-    id(val) {
-      if (!val) {
-        return
-      }
-
-      this.$router.push(
-        this.localePath({
-          name: 'light',
-          query: {
-            u: this.$route.query.u,
-            id: val,
-          },
-        }),
-        () => {},
-        () => {}
-      )
-
-      this.index = this.ids[val]
-    },
-
-    index(val) {
-      this.id = this.ids2[val]
-    },
   },
 
   mounted() {
@@ -243,120 +166,111 @@ export default {
     const url = query.u || 'data/small.xml'
     const CETEIcean = new CETEI()
 
-    const id = this.$route.query.id
-
     const self = this
     CETEIcean.getHTML5(url, function (data) {
-      console.log('downloaded.')
       self.xml = data
 
-      const texts = $($(data).find('tei-text')[0]).find('tei-text')
+      // graphicへの対応
+      const sources = data.getElementsByTagName('tei-graphic')
+      for (let i = 0; i < sources.length; i++) {
+        const source = sources[i]
+        $(source).removeAttr('url')
+      }
 
-      const arr = []
-      const arr2 = []
-      const ids = {}
-      const ids2 = {}
+      $('#tei').append(data)
 
-      const items = []
+      // マニフェスト
+      const manifest = $('tei-facsimile').attr('source')
+      self.manifest = manifest
+
+      const pbs = $('tei-pb')
+      for (let i = 0; i < pbs.length; i++) {
+        const pb = pbs[i]
+
+        if (!$(pb).attr('corresp')) {
+          continue
+        }
+        const corresp = $(pb).attr('corresp').replace('#', '')
+
+        const source = $('#' + corresp)
+        const canvas = source.attr('source')
+
+        source.text = ''
+
+        const iiificon = $(
+          `<img width="30px" class="ma-1" style="cursor: pointer; color: green;" src="${self.baseUrl}/img/icons/image-24px.svg"/>`
+        )
+        iiificon.on('click', function () {
+          self.canvas = canvas
+        })
+        $(pb).prepend(iiificon)
+
+        iiificon.after(
+          `<span class="ma-1" style="color : #9E9E9E">[Page @${$(pb).attr(
+            'corresp'
+          )}]</span>`
+        )
+      }
+
+      let elements = ['tei-persname', 'tei-placename']
+
+      const prefix = ['chname', 'place']
 
       let count = 0
-      for (let j = 0; j < texts.length; j++) {
-        const text = texts[j]
 
-        let label = ''
-        const heads = $(text).find('tei-head')
-        if (heads.length > 0) {
-          label = heads[0].textContent
-        }
+      /*
 
-        let id2 = count
-        if ($(text).attr('xml:id')) {
-          id2 = $(text).attr('xml:id')
-        }
+      for (let j = 0; j < elements.length; j++) {
+        const es = $(elements[j])
+        for (let i = 0; i < es.length; i++) {
+          const e = $(es[i])
+          const textContent = $(e)[0].textContent
+          const url = `https://shibusawa-dlab.github.io/lab1/snorql/?describe=https://nakamura196.github.io/repo/api/${prefix[j]}/${textContent}`
 
-        // count += 1
+          const outerHTML = $('<div />').append($(e).clone()).html()
 
-        const divs = $(text).find('tei-div')
-        // console.log(divs)
+          const a = $(
+            `<a href="${url}" target="_blank" style="text-decoration: none; color: inherit;">${outerHTML}</a>`
+          )
 
-        // とりあえずフラットに並べる
-        const arr = []
-
-        for (let i = 0; i < divs.length; i++) {
-          const div = divs[i]
-          arr.push(div)
-          $(div).remove()
-        }
-
-        arr.unshift(text)
-        // 終了
-
-        // 親の準備
-        const children2 = []
-        items.push({
-          label,
-          id: id2,
-          children: children2,
-        })
-        //
-
-        for (let i = 0; i < arr.length; i++) {
-          const div = arr[i]
-          arr2.push(div)
-
-          if ($(div).attr('xml:id')) {
-            ids[$(div).attr('xml:id')] = count
-            ids2[count] = $(div).attr('xml:id')
-          } else {
-            ids[count] = count
-            ids2[count] = count
-          }
-
-          if (id === ids2[count]) {
-            self.index = count
-          }
-
-          // 親の場合
-          if (i !== 0) {
-            let label2 = ''
-            const heads2 = $(div).find('tei-head')
-            if (heads2.length > 0) {
-              label2 = heads2[0].textContent
-            }
-
-            children2.push({
-              label: label2,
-              id: ids2[count],
-            })
-          }
+          e.replaceWith(a)
 
           count += 1
         }
       }
 
-      self.items = items
+      */
 
-      const sources = $(data).find('tei-source')
-      const facs = {}
-      for (let i = 0; i < sources.length; i++) {
-        const source = sources[i]
-        facs[$(source).attr('xml:id')] = $(source).attr('source')
+      console.log({ count })
+
+      count = 0
+
+      elements = ['tei-date', 'tei-time']
+
+      /*
+
+      for (let j = 0; j < elements.length; j++) {
+        const dates = $(elements[j])
+        for (let i = 0; i < dates.length; i++) {
+          const date = $(dates[i])
+          date.attr('tooltip', date.attr('when'))
+          date.attr('flow', 'right')
+
+          count += 1
+        }
       }
 
-      self.facs = facs
+      */
 
-      self.divs = arr
-      self.divs2 = arr2
-      self.ids = ids
-      self.ids2 = ids2
+      console.log({ count })
 
-      // マニフェスト
-      const manifest = $(data).find('tei-facsimile').attr('source')
-      self.manifest = manifest
+      // $('#tei').append(data)
 
+      self.scroll()
+
+      /*
+       */
       self.loading = false
-
-      console.log('processed.')
     })
   },
 
@@ -367,17 +281,23 @@ export default {
       this.height = window.innerHeight
     },
 
-    bbb(data) {
-      if (!data) {
-        return {}
-      }
-      const dfStr = convert.xml2json(data.outerHTML, {
-        compact: false,
-        spaces: 4,
-      })
-      const df = JSON.parse(dfStr)
+    scroll() {
+      const query = this.$route.query
+      if (query.id) {
+        const id = query.id
 
-      return df.elements[0]
+        // const point = document.querySelector('#' + id).getBoundingClientRect()
+        const point2 = document
+          .querySelector('#container')
+          .getBoundingClientRect()
+
+        const options = {
+          container: '#container',
+          offset: -1 * point2.width, // + point.width,
+          x: true,
+        }
+        VueScrollTo.scrollTo('#' + id, 0, options)
+      }
     },
   },
 }
