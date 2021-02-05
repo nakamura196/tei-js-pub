@@ -27,7 +27,7 @@ import { Vue, Component, Prop } from 'nuxt-property-decorator'
 @Component({})
 export default class Menu extends Vue {
   @Prop()
-  items: any[]
+  items!: any[]
 
   get id(): any {
     return this.$store.getters.getId
