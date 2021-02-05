@@ -14,7 +14,7 @@
       <v-navigation-drawer
         v-model="drawer2"
         app
-        :temporary="false"
+        :temporary="true"
         right
         :width="256 * 2"
       >
@@ -62,42 +62,40 @@
     </template>
 
     <v-container fluid>
-      <v-row>
-        <v-col>
-          <v-tooltip bottom>
-            <template #activator="{ on }">
-              <v-btn
-                v-show="index != 0"
-                fab
-                dark
-                small
-                @click="index -= 1"
-                v-on="on"
-              >
-                <v-icon dark> mdi-menu-left </v-icon>
-              </v-btn>
-            </template>
-            <span>{{ $t('previous') }}</span>
-          </v-tooltip>
-        </v-col>
-        <v-col class="text-right">
-          <v-tooltip bottom>
-            <template #activator="{ on }">
-              <v-btn
-                v-show="index != divs2.length - 1"
-                fab
-                dark
-                small
-                @click="index += 1"
-                v-on="on"
-              >
-                <v-icon dark> mdi-menu-right </v-icon>
-              </v-btn>
-            </template>
-            <span>{{ $t('next') }}</span>
-          </v-tooltip>
-        </v-col>
-      </v-row>
+      <div class="text-center">
+        <v-tooltip bottom>
+          <template #activator="{ on }">
+            <v-btn
+              v-show="index != divs2.length - 1"
+              fab
+              dark
+              small
+              class="mx-1"
+              @click="index += 1"
+              v-on="on"
+            >
+              <v-icon dark> mdi-menu-left </v-icon>
+            </v-btn>
+          </template>
+          <span>{{ $t('next') }}</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+          <template #activator="{ on }">
+            <v-btn
+              v-show="index != 0"
+              fab
+              dark
+              small
+              class="mx-1"
+              @click="index -= 1"
+              v-on="on"
+            >
+              <v-icon dark> mdi-menu-right </v-icon>
+            </v-btn>
+          </template>
+          <span>{{ $t('previous') }}</span>
+        </v-tooltip>
+      </div>
 
       <v-row class="mt-2">
         <v-col cols="12" :sm="manifest ? 6 : 12">
@@ -255,6 +253,7 @@ export default {
 
     index(val) {
       this.id = this.ids2[val]
+      this.canvas = this.canvases[val]
     },
   },
 
@@ -280,6 +279,7 @@ export default {
       const arr2 = []
       const ids = {}
       const ids2 = {}
+      const canvases = []
 
       const items = []
 
@@ -301,7 +301,6 @@ export default {
         // count += 1
 
         const divs = $(text).find('tei-div')
-        // console.log(divs)
 
         // とりあえずフラットに並べる
         const arr = []
@@ -324,9 +323,39 @@ export default {
         })
         //
 
+        // facs
+        const sources = $(data).find('tei-source')
+        const facs = {}
+        for (let i = 0; i < sources.length; i++) {
+          const source = sources[i]
+          facs[$(source).attr('xml:id')] = $(source).attr('source')
+        }
+
+        self.facs = facs
+        // facs end
+
+        // メイン
+        const currentCanvas = facs[Object.keys(facs)[0]]
         for (let i = 0; i < arr.length; i++) {
           const div = arr[i]
           arr2.push(div)
+
+          const pbs = $(div).find('tei-pb')
+          let canvas = ''
+          if (pbs.length === 0) {
+            canvas = currentCanvas
+          } else {
+            const firstPb = pbs[0]
+            const currentN = $(firstPb).attr('n')
+            const previousIndex = Number(currentN.replace('B', '')) - 1
+            const pb = 'pageB' + previousIndex
+            canvas = facs[pb]
+
+            const lastPb = pbs[pbs.length - 1]
+            currentCanvas = facs[$(lastPb).attr('corresp').replace('#', '')]
+          }
+
+          canvases.push(canvas)
 
           if ($(div).attr('xml:id')) {
             ids[$(div).attr('xml:id')] = count
@@ -360,19 +389,11 @@ export default {
 
       self.items = items
 
-      const sources = $(data).find('tei-source')
-      const facs = {}
-      for (let i = 0; i < sources.length; i++) {
-        const source = sources[i]
-        facs[$(source).attr('xml:id')] = $(source).attr('source')
-      }
-
-      self.facs = facs
-
       self.divs = arr
       self.divs2 = arr2
       self.ids = ids
       self.ids2 = ids2
+      self.canvases = canvases
 
       // マニフェスト
       const manifest = $(data).find('tei-facsimile').attr('source')
@@ -415,182 +436,5 @@ export default {
   -webkit-writing-mode: vertical-rl;
   -ms-writing-mode: tb-rl;
   writing-mode: vertical-rl;
-}
-
-tei-persName {
-  background-color: #ffccbc;
-}
-
-tei-placeName {
-  background-color: #c8e6c9;
-}
-
-tei-date {
-  background-color: #bbdefb;
-}
-
-tei-time {
-  background-color: #fff9c4;
-}
-
-tei-head {
-  margin: 20px;
-  font-size: large !important;
-  font-weight: bold;
-}
-
-/* START TOOLTIP STYLES */
-[tooltip] {
-  position: relative; /* opinion 1 */
-}
-
-/* Applies to all tooltips */
-[tooltip]::before,
-[tooltip]::after {
-  text-transform: none; /* opinion 2 */
-  font-size: 15px;
-  font-weight: normal;
-  /*font-size: 0.9em;*/ /* opinion 3 */
-  line-height: 1;
-  user-select: none;
-  pointer-events: none;
-  position: absolute;
-  display: none;
-  opacity: 0;
-}
-[tooltip]::before {
-  content: '';
-  border: 5px solid transparent; /* opinion 4 */
-  z-index: 1001; /* absurdity 1 */
-}
-[tooltip]::after {
-  content: attr(tooltip); /* magic! */
-
-  /* most of the rest of this is opinion */
-  font-family: Helvetica, sans-serif;
-  text-align: center;
-
-  /*
-    Let the content set the size of the tooltips
-    but this will also keep them from being obnoxious
-    */
-  min-width: 3em;
-  max-width: 21em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /*padding: 1ch 1.5ch;*/
-  padding: 1.5ch;
-  border-radius: 0.3ch;
-  box-shadow: 0 1em 2em -0.5em rgba(0, 0, 0, 0.35);
-  background: #333;
-  color: #fff;
-  z-index: 1000; /* absurdity 2 */
-}
-
-/* Make the tooltips respond to hover */
-[tooltip]:hover::before,
-[tooltip]:hover::after {
-  display: block;
-}
-
-/* don't show empty tooltips */
-[tooltip='']::before,
-[tooltip='']::after {
-  display: none !important;
-}
-
-/* FLOW: UP */
-[tooltip]:not([flow])::before,
-[tooltip][flow^='up']::before {
-  bottom: 100%;
-  border-bottom-width: 0;
-  border-top-color: #333;
-}
-[tooltip]:not([flow])::after,
-[tooltip][flow^='up']::after {
-  bottom: calc(100% + 5px);
-}
-[tooltip]:not([flow])::before,
-[tooltip]:not([flow])::after,
-[tooltip][flow^='up']::before,
-[tooltip][flow^='up']::after {
-  left: 50%;
-  transform: translate(-50%, -0.5em);
-}
-
-/* FLOW: DOWN */
-[tooltip][flow^='down']::before {
-  top: 100%;
-  border-top-width: 0;
-  border-bottom-color: #333;
-}
-[tooltip][flow^='down']::after {
-  top: calc(100% + 5px);
-}
-[tooltip][flow^='down']::before,
-[tooltip][flow^='down']::after {
-  left: 50%;
-  transform: translate(-50%, 0.5em);
-}
-
-/* FLOW: LEFT */
-[tooltip][flow^='left']::before {
-  top: 50%;
-  border-right-width: 0;
-  border-left-color: #333;
-  left: calc(0em - 5px);
-  transform: translate(-0.5em, -50%);
-}
-[tooltip][flow^='left']::after {
-  top: 50%;
-  right: calc(100% + 5px);
-  transform: translate(-0.5em, -50%);
-}
-
-/* FLOW: RIGHT */
-[tooltip][flow^='right']::before {
-  top: 50%;
-  border-left-width: 0;
-  border-right-color: #333;
-  right: calc(0em - 5px);
-  transform: translate(0.5em, -50%);
-}
-[tooltip][flow^='right']::after {
-  top: 50%;
-  left: calc(100% + 5px);
-  transform: translate(0.5em, -50%);
-}
-
-/* KEYFRAMES */
-@keyframes tooltips-vert {
-  to {
-    opacity: 0.9;
-    transform: translate(-50%, 0);
-  }
-}
-
-@keyframes tooltips-horz {
-  to {
-    opacity: 0.9;
-    transform: translate(0, -50%);
-  }
-}
-
-/* FX All The Things */
-[tooltip]:not([flow]):hover::before,
-[tooltip]:not([flow]):hover::after,
-[tooltip][flow^='up']:hover::before,
-[tooltip][flow^='up']:hover::after,
-[tooltip][flow^='down']:hover::before,
-[tooltip][flow^='down']:hover::after {
-  animation: tooltips-vert 300ms ease-out forwards;
-}
-
-[tooltip][flow^='left']:hover::before,
-[tooltip][flow^='left']:hover::after,
-[tooltip][flow^='right']:hover::before,
-[tooltip][flow^='right']:hover::after {
-  animation: tooltips-horz 300ms ease-out forwards;
 }
 </style>
