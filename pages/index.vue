@@ -1,19 +1,17 @@
 <template>
   <div>
-    <template v-if="collectionFlag">
-      <Collection></Collection>
-    </template>
-
-    <template v-if="itemFlag">
+    <div>
       <v-navigation-drawer
         v-model="drawer"
+        style="z-index: 100000"
         app
         :temporary="true"
         :width="(256 * 3) / 2"
       >
-        <Menu></Menu>
+        <Menu :id="$route.query.id"></Menu>
       </v-navigation-drawer>
 
+      <!--
       <v-navigation-drawer
         v-model="drawer2"
         app
@@ -21,22 +19,23 @@
         right
         :width="256 * 2"
       >
-        <Metadata v-if="xml" :xml="xml"></Metadata>
+        <Metadata></Metadata>
       </v-navigation-drawer>
+      -->
 
-      <v-app-bar color="primary" dark>
+      <v-app-bar flat>
         <v-btn icon @click="drawer = !drawer"
           ><v-icon>mdi-view-list</v-icon></v-btn
         >
         <v-toolbar-title>
-          {{ '渋沢栄一伝記資料別巻第一日記のTEIマークアップ' }}
+          <Title></Title>
         </v-toolbar-title>
 
         <v-spacer></v-spacer>
 
         <v-menu offset-y>
           <template #activator="{ on }">
-            <v-btn depressed btn color="primary" v-on="on">
+            <v-btn depressed btn v-on="on">
               <v-icon class="mr-2">mdi-translate</v-icon>
             </v-btn>
           </template>
@@ -51,193 +50,203 @@
           </v-list>
         </v-menu>
 
-        <v-app-bar-nav-icon @click.stop="drawer2 = !drawer2" />
+        <!-- <v-app-bar-nav-icon @click.stop="drawer2 = !drawer2" /> -->
       </v-app-bar>
+    </div>
 
-      <template v-if="loading"
-        ><div class="pa-10 text-center">
-          <v-progress-circular
-            indeterminate
-            color="primary"
-          ></v-progress-circular>
-        </div>
-      </template>
-
-      <div class="px-10 pt-10" :style="`width: ${width}px;`">
-        <v-card
-          id="container"
-          class="scroll vertical pa-5"
-          outlined
-          flat
-          :style="`height: ${height * 0.85}px;`"
-        >
-          <Main :elements="df.elements"></Main>
-        </v-card>
+    <template v-if="loading"
+      ><div class="pa-10 text-center">
+        <v-progress-circular
+          indeterminate
+          color="primary"
+        ></v-progress-circular>
       </div>
     </template>
+
+    <v-container v-show="!loading" fluid>
+      <v-row class="mt-2">
+        <v-col cols="12" :sm="manifest ? 6 : 12">
+          <v-card
+            id="container"
+            flat
+            outlined
+            class="scroll vertical"
+            :style="`height: ${height * 0.85}px; width: ${
+              manifest ? width / 2 : width
+            }px;`"
+          >
+            <div class="pa-4 px-5">
+              <div id="tei" />
+            </div>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" :sm="manifest ? 6 : 12">
+          <iframe
+            v-show="!loading"
+            v-if="manifest"
+            :src="
+              baseUrl +
+              `/mirador/?manifest=${manifest}&canvas=${canvas}&bottomPanel=false`
+            "
+            width="100%"
+            :style="`height: ${height * 0.85}px;`"
+            allowfullscreen="allowfullscreen"
+            frameborder="0"
+          >
+          </iframe>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component } from 'nuxt-property-decorator'
-import axios from 'axios'
+<script>
+import CETEI from 'CETEIcean'
 import VueScrollTo from 'vue-scrollto'
-import Main from '~/components/Main.vue'
-import Menu from '~/components/Menu.vue'
-import Metadata from '~/components/Metadata.vue'
-import Collection from '~/components/Collection.vue'
+import $ from 'jquery'
+import Menu from '~/components/Menu2.vue'
+import Title from '~/components/Title.vue'
 
-const convert = require('xml-js')
-
-@Component({
+export default {
   components: {
-    Main,
     Menu,
-    Metadata,
-    Collection,
+    Title,
   },
-})
-export default class about extends Vue {
-  baseUrl: string = process.env.BASE_URL || ''
-  siteName: string = process.env.siteName || ''
-  github: string = process.env.github || ''
+  data() {
+    return {
+      baseUrl: process.env.BASE_URL || '',
+      siteName: process.env.siteName || '',
 
-  collectionFlag: boolean = false
-  itemFlag: boolean = false
+      github: process.env.github || '',
 
-  loading: boolean = false
+      loading: false,
 
-  width: number = window.innerWidth
-  height: number = window.innerHeight
+      width: window.innerWidth,
+      height: window.innerHeight,
 
-  drawer: boolean = false
-  drawer2: boolean = false
+      drawer: false,
+      drawer2: false,
 
-  df: any = {}
-  xmlStr: string = ''
-  teiHTML: any = null
-
-  get style(): {} {
-    return this.$store.getters.getStyle
-  }
-
-  set style(value) {
-    this.$store.commit('setStyle', value)
-  }
-
-  get xml(): {} {
-    return this.$store.getters.getXml
-  }
-
-  set xml(value) {
-    this.$store.commit('setXml', value)
-  }
-
-  get result(): {} {
-    return this.$store.getters.getResult
-  }
-
-  set result(value) {
-    this.$store.commit('setResult', value)
-  }
-
-  async created() {
-    this.loading = true
-    const query = this.$route.query
-
-    const startTime = Date.now() // 開始時間
-
-    // スタイル
-    const style: any = query.style || 'data/shibusawa.json'
-    const result2 = await axios.get(style)
-    this.style = result2.data
-
-    // XML
-    const u: any = query.u || 'data/small.xml'
-    const result = await axios.get(u)
-
-    this.result = result.data
-
-    if (result.data['@context']) {
-      this.collectionFlag = true
-      return
+      // pos: 1,
+      canvas: '',
+      manifest: null,
     }
-
-    this.itemFlag = true
-
-    let endTime = Date.now() // 終了時間
-    console.log('downloaded', endTime - startTime)
-
-    let xml = result.data
-    if (typeof xml === 'string') {
-      const dpObj = new DOMParser()
-      xml = dpObj.parseFromString(xml, 'text/xml')
-    }
-
-    this.xml = xml
-
-    const xmlStr = new XMLSerializer().serializeToString(xml)
-    this.xmlStr = xmlStr
-
-    endTime = Date.now() // 終了時間
-    console.log('converted to xml string', endTime - startTime)
-
-    const dfStr = convert.xml2json(xmlStr, { compact: false, spaces: 4 })
-    const df = JSON.parse(dfStr)
-
-    this.df = df
-
-    endTime = Date.now() // 終了時間
-    console.log('converted to json', endTime - startTime)
-
-    const self = this
-    window.setTimeout(function () {
-      self.loading = false
-      self.scroll()
-
-      endTime = Date.now() // 終了時間
-      console.log('loaded', endTime - startTime)
-    }, 0)
-  }
-
-  mounted() {
-    window.addEventListener('resize', this.handleResize)
-  }
-
-  handleResize() {
-    // resizeのたびにこいつが発火するので、ここでやりたいことをやる
-    this.width = window.innerWidth
-    this.height = window.innerHeight
-  }
-
-  scroll() {
-    const query = this.$route.query
-    if (query.id) {
-      const id = query.id
-
-      const point: any = (document.querySelector(
-        '#' + id
-      ) as any).getBoundingClientRect()
-      const point2: any = (document.querySelector(
-        '#container'
-      ) as any).getBoundingClientRect()
-
-      const options = {
-        container: '#container',
-        offset: -1 * point2.width + point.width,
-        x: true,
-      }
-      VueScrollTo.scrollTo('#' + id, 0, options)
-    }
-  }
-
+  },
   head() {
     const title = this.$t(this.siteName)
     return {
       titleTemplate: null,
       title,
     }
-  }
+  },
+  computed: {
+    style: {
+      get() {
+        return this.$store.getters.getStyle
+      },
+      set(value) {
+        this.$store.commit('setStyle', value)
+      },
+    },
+
+    xml: {
+      get() {
+        return this.$store.getters.getXml
+      },
+      set(value) {
+        this.$store.commit('setXml', value)
+      },
+    },
+  },
+
+  mounted() {
+    this.loading = true
+
+    window.addEventListener('resize', this.handleResize)
+
+    const query = this.$route.query
+    const url = query.u || 'data/small.xml'
+    const CETEIcean = new CETEI()
+
+    const self = this
+    CETEIcean.getHTML5(url, function (data) {
+      self.xml = data
+
+      // graphicへの対応
+      const sources = data.getElementsByTagName('tei-graphic')
+      for (let i = 0; i < sources.length; i++) {
+        const source = sources[i]
+        $(source).removeAttr('url')
+      }
+
+      $('#tei').append(data)
+
+      // マニフェスト
+      const manifest = $('tei-facsimile').attr('source')
+      self.manifest = manifest
+
+      const pbs = $('tei-pb')
+      for (let i = 0; i < pbs.length; i++) {
+        const pb = pbs[i]
+
+        if (!$(pb).attr('corresp')) {
+          continue
+        }
+        const corresp = $(pb).attr('corresp').replace('#', '')
+
+        const source = $('#' + corresp)
+        const canvas = source.attr('source')
+
+        source.text = ''
+
+        const iiificon = $(
+          `<div class="ma-2"><img width="30px" style="cursor: pointer; color: green;" src="${
+            self.baseUrl
+          }/img/icons/image-24px.svg"/><span class="ma-1" style="color : #9E9E9E">[Page @${$(
+            pb
+          ).attr('corresp')}]</span></div>`
+        )
+        iiificon.on('click', function () {
+          self.canvas = canvas
+        })
+        $(pb).prepend(iiificon)
+
+        iiificon.after(``)
+      }
+
+      self.scroll()
+
+      self.loading = false
+    })
+  },
+
+  methods: {
+    handleResize() {
+      // resizeのたびにこいつが発火するので、ここでやりたいことをやる
+      this.width = window.innerWidth
+      this.height = window.innerHeight
+    },
+
+    scroll() {
+      const query = this.$route.query
+      if (query.id) {
+        const id = query.id
+
+        // const point = document.querySelector('#' + id).getBoundingClientRect()
+        const point2 = document
+          .querySelector('#container')
+          .getBoundingClientRect()
+
+        const options = {
+          container: '#container',
+          offset: -1 * point2.width, // + point.width,
+          x: true,
+        }
+        VueScrollTo.scrollTo('#' + id, 0, options)
+      }
+    },
+  },
 }
 </script>
 <style>
@@ -249,5 +258,27 @@ export default class about extends Vue {
   -webkit-writing-mode: vertical-rl;
   -ms-writing-mode: tb-rl;
   writing-mode: vertical-rl;
+}
+
+tei-persName {
+  background-color: #ffccbc;
+}
+
+tei-placeName {
+  background-color: #c8e6c9;
+}
+
+tei-date {
+  background-color: #bbdefb;
+}
+
+tei-time {
+  background-color: #fff9c4;
+}
+
+tei-head {
+  margin: 20px;
+  font-size: large !important;
+  font-weight: bold;
 }
 </style>
